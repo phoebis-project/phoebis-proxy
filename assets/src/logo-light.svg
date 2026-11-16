@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 170" role="img" aria-label="Phoebis Proxy">
+  <title>Phoebis Proxy</title>
+
+  <!-- Editable master. The wordmark needs Audiowide installed (SIL Open Font License,
+       fonts.google.com/specimen/Audiowide). The tagline needs DejaVu Sans. Regenerate the self-contained copy that the
+       README uses:
+       rsvg-convert -f svg logo-light.svg -o ../logo-light.svg -->
+  <!-- The mark: the butterfly of Phoebis Router in flight, seen from above, with the same wing lobes and the same
+       shared region. A tube takes the place of the body. -->
+  <defs>
+    <linearGradient id="proxy-light-a" gradientUnits="userSpaceOnUse" x1="135.919" y1="46.567" x2="102.277" y2="38.875"><stop offset="0" stop-color="#F59E0B"/><stop offset="1" stop-color="#EC6A1C"/></linearGradient>
+    <linearGradient id="proxy-light-b" gradientUnits="userSpaceOnUse" x1="141.023" y1="10.248" x2="130.444" y2="49.729"><stop offset="0" stop-color="#F5C400"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>
+    <linearGradient id="proxy-light-c" gradientUnits="userSpaceOnUse" x1="143.145" y1="59.082" x2="132.985" y2="92.064"><stop offset="0" stop-color="#F59E0B"/><stop offset="1" stop-color="#EC6A1C"/></linearGradient>
+    <linearGradient id="proxy-light-d" gradientUnits="userSpaceOnUse" x1="177.151" y1="72.822" x2="137.67" y2="62.244"><stop offset="0" stop-color="#F5C400"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>
+  </defs>
+  <path d="M135.919 46.567L129.597 35.617A12.645 12.645 0 1 0 124.969 52.89Z" fill="url(#proxy-light-a)"/>
+  <path d="M130.444 49.729L143.741 42.051A15.354 15.354 0 1 0 122.767 36.431Z" fill="url(#proxy-light-b)"/>
+  <path d="M143.145 59.082L132.194 65.405A12.645 12.645 0 1 0 149.467 70.033Z" fill="url(#proxy-light-c)"/>
+  <path d="M137.67 62.244L145.347 75.541A15.354 15.354 0 1 0 150.967 54.566Z" fill="url(#proxy-light-d)"/>
+  <path d="M135.919 46.567L129.597 35.617A12.645 12.645 0 0 0 120.726 29.467A15.354 15.354 0 0 0 122.767 36.431L130.444 49.729Z" fill="#CE3D2C"/>
+  <path d="M143.145 59.082L137.67 62.244L145.347 75.541A15.354 15.354 0 0 0 150.358 80.79A12.645 12.645 0 0 0 149.467 70.033Z" fill="#CE3D2C"/>
+  <path d="M155.326 42.173Q161.643 36.93 160.768 29.092" fill="none" stroke="#16181D" stroke-width="2.348" stroke-linecap="round"/>
+  <circle cx="160.768" cy="29.092" r="2.493" fill="#16181D"/>
+  <path d="M156.654 44.473Q164.353 41.624 170.703 46.3" fill="none" stroke="#16181D" stroke-width="2.348" stroke-linecap="round"/>
+  <circle cx="170.703" cy="46.3" r="2.493" fill="#16181D"/>
+  <path d="M150.888 41.784L112.56 63.913A3.884 3.884 0 0 0 116.444 70.639L154.771 48.511A3.884 3.884 0 0 0 150.888 41.784Z" fill="none" stroke="#16181D" stroke-width="2.529" stroke-linecap="round"/>
+  <text x="140" y="126" text-anchor="middle" font-family="Audiowide" font-size="28" fill="#16181D">Phoebis Proxy</text>
+  <text x="140" y="150" text-anchor="middle" font-family="DejaVu Sans" font-size="12" letter-spacing="0.3" fill="#5C6370">Every tunnel ends at the right host.</text>
+</svg>

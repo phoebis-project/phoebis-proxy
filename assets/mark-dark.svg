@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Phoebis Proxy">
+  <title>Phoebis Proxy</title>
+  <defs>
+    <linearGradient id="proxy-dark-a" gradientUnits="userSpaceOnUse" x1="43.466" y1="42.853" x2="6.085" y2="34.306"><stop offset="0" stop-color="#FFAE2B"/><stop offset="1" stop-color="#FF7F2A"/></linearGradient>
+    <linearGradient id="proxy-dark-b" gradientUnits="userSpaceOnUse" x1="49.137" y1="2.497" x2="37.382" y2="46.365"><stop offset="0" stop-color="#FFD84A"/><stop offset="1" stop-color="#FFAE2B"/></linearGradient>
+    <linearGradient id="proxy-dark-c" gradientUnits="userSpaceOnUse" x1="51.494" y1="56.758" x2="40.206" y2="93.404"><stop offset="0" stop-color="#FFAE2B"/><stop offset="1" stop-color="#FF7F2A"/></linearGradient>
+    <linearGradient id="proxy-dark-d" gradientUnits="userSpaceOnUse" x1="89.279" y1="72.025" x2="45.411" y2="60.271"><stop offset="0" stop-color="#FFD84A"/><stop offset="1" stop-color="#FFAE2B"/></linearGradient>
+  </defs>
+  <path d="M43.466 42.853L36.441 30.685A14.05 14.05 0 1 0 31.299 49.877Z" fill="url(#proxy-dark-a)"/>
+  <path d="M37.382 46.365L52.157 37.835A17.06 17.06 0 1 0 28.852 31.59Z" fill="url(#proxy-dark-b)"/>
+  <path d="M51.494 56.758L39.327 63.783A14.05 14.05 0 1 0 58.519 68.926Z" fill="url(#proxy-dark-c)"/>
+  <path d="M45.411 60.271L53.941 75.045A17.06 17.06 0 1 0 60.185 51.74Z" fill="url(#proxy-dark-d)"/>
+  <path d="M43.466 42.853L36.441 30.685A14.05 14.05 0 0 0 26.585 23.852A17.06 17.06 0 0 0 28.852 31.59L37.382 46.365Z" fill="#F0503C"/>
+  <path d="M51.494 56.758L45.411 60.271L53.941 75.045A17.06 17.06 0 0 0 59.509 80.878A14.05 14.05 0 0 0 58.519 68.926Z" fill="#F0503C"/>
+  <path d="M65.029 37.97Q72.048 32.145 71.075 23.436" fill="none" stroke="#F2F3F5" stroke-width="2.609" stroke-linecap="round"/>
+  <circle cx="71.075" cy="23.436" r="2.77" fill="#F2F3F5"/>
+  <path d="M66.505 40.526Q75.058 37.36 82.114 42.556" fill="none" stroke="#F2F3F5" stroke-width="2.609" stroke-linecap="round"/>
+  <circle cx="82.114" cy="42.556" r="2.77" fill="#F2F3F5"/>
+  <path d="M60.097 37.538L17.512 62.125A4.315 4.315 0 0 0 21.827 69.599L64.412 45.012A4.315 4.315 0 0 0 60.097 37.538Z" fill="none" stroke="#F2F3F5" stroke-width="2.81" stroke-linecap="round"/>
+</svg>

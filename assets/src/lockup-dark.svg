@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-label="Phoebis Proxy">
+  <title>Phoebis Proxy</title>
+
+  <!-- Editable master. The wordmark needs Audiowide installed (SIL Open Font License,
+       fonts.google.com/specimen/Audiowide). Regenerate the self-contained copy for a listing icon or a social preview:
+       rsvg-convert -f svg lockup-dark.svg -o ../lockup-dark.svg -->
+  <!-- The mark: the butterfly of Phoebis Router in flight, seen from above, with the same wing lobes and the same
+       shared region. A tube takes the place of the body. -->
+  <rect width="1000" height="1000" fill="#111318"/>
+  <defs>
+    <linearGradient id="proxy-dark-a" gradientUnits="userSpaceOnUse" x1="472.796" y1="367.116" x2="248.511" y2="315.835"><stop offset="0" stop-color="#FFAE2B"/><stop offset="1" stop-color="#FF7F2A"/></linearGradient>
+    <linearGradient id="proxy-dark-b" gradientUnits="userSpaceOnUse" x1="506.82" y1="124.983" x2="436.294" y2="388.19"><stop offset="0" stop-color="#FFD84A"/><stop offset="1" stop-color="#FFAE2B"/></linearGradient>
+    <linearGradient id="proxy-dark-c" gradientUnits="userSpaceOnUse" x1="520.966" y1="450.549" x2="453.235" y2="670.426"><stop offset="0" stop-color="#FFAE2B"/><stop offset="1" stop-color="#FF7F2A"/></linearGradient>
+    <linearGradient id="proxy-dark-d" gradientUnits="userSpaceOnUse" x1="747.671" y1="542.15" x2="484.464" y2="471.624"><stop offset="0" stop-color="#FFD84A"/><stop offset="1" stop-color="#FFAE2B"/></linearGradient>
+  </defs>
+  <path d="M472.796 367.116L430.647 294.112A84.298 84.298 0 1 0 399.792 409.265Z" fill="url(#proxy-dark-a)"/>
+  <path d="M436.294 388.19L524.942 337.01A102.362 102.362 0 1 0 385.113 299.543Z" fill="url(#proxy-dark-b)"/>
+  <path d="M520.966 450.549L447.962 492.698A84.298 84.298 0 1 0 563.115 523.553Z" fill="url(#proxy-dark-c)"/>
+  <path d="M484.464 471.624L535.645 560.271A102.362 102.362 0 1 0 573.112 420.443Z" fill="url(#proxy-dark-d)"/>
+  <path d="M472.796 367.116L430.647 294.112A84.298 84.298 0 0 0 371.51 253.111A102.362 102.362 0 0 0 385.113 299.543L436.294 388.19Z" fill="#F0503C"/>
+  <path d="M520.966 450.549L484.464 471.624L535.645 560.271A102.362 102.362 0 0 0 569.054 595.268A84.298 84.298 0 0 0 563.115 523.553Z" fill="#F0503C"/>
+  <path d="M602.172 337.818Q644.287 302.87 638.453 250.616" fill="none" stroke="#F2F3F5" stroke-width="15.655" stroke-linecap="round"/>
+  <circle cx="638.453" cy="250.616" r="16.619" fill="#F2F3F5"/>
+  <path d="M611.027 353.156Q662.351 334.157 704.687 365.336" fill="none" stroke="#F2F3F5" stroke-width="15.655" stroke-linecap="round"/>
+  <circle cx="704.687" cy="365.336" r="16.619" fill="#F2F3F5"/>
+  <path d="M572.583 335.229L317.069 482.75A25.891 25.891 0 0 0 342.961 527.596L598.475 380.074A25.891 25.891 0 0 0 572.583 335.229Z" fill="none" stroke="#F2F3F5" stroke-width="16.86" stroke-linecap="round"/>
+  <text x="500" y="830" text-anchor="middle" font-family="Audiowide" font-size="88" fill="#F2F3F5">Phoebis Proxy</text>
+</svg>
