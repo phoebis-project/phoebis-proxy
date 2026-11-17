@@ -66,8 +66,11 @@ docker run \
 ```
 
 The two values are those of the stack example. `192.0.2.0/24` stands for the network the connections arrive from, and
-`phoebis:8443` for the host and the port of the router's feature listener, under a name the container resolves.
 [Beside Phoebis Router](#beside-phoebis-router) says which network the allow list names behind a published port.
+`phoebis:8443` stands for the host and the port of the router's feature listener. On Docker's default network the name
+`phoebis` does not resolve to the router's container, so the proxy starts and each `CONNECT` for a feature host gets the
+502. A run therefore names the router's host and port as the container reaches them, or it starts the container on the
+router's network with `--network`, where the service's name resolves.
 
 ## Settings
 
@@ -93,9 +96,9 @@ listed network alone. It closes each other connection before it reads a byte and
 an IP address, and an IPv6 address stands in brackets. The proxy resolves a name at each `CONNECT` it sends there, so a
 changed address needs no restart.
 
-The proxy refuses to start in two cases, with the reason on standard error: on an upstream that is no host with a port,
-and on a listen address beyond loopback without an allow list. The proxy tunnels each host, so on an address that other
-machines reach it would be an open forward proxy for whoever reaches its port.
+The proxy refuses to start, with the reason on standard error, on an upstream that is no host with a port and on a
+listen address beyond loopback without an allow list. The proxy tunnels each host, so on an address that other machines
+reach it would be an open forward proxy for whoever reaches its port.
 
 ## What a `CONNECT` gets
 
@@ -168,9 +171,10 @@ holds the client's whole setup, of which that variable is one line. The same pag
 authority, which the client has to trust.
 
 Between a client and a proxy on another machine the `CONNECT` lines cross the network in the clear: the host name and
-the port of each HTTPS call that the client sends through the proxy. The router key crosses it encrypted. The client
-opens TLS inside the tunnel, the router's feature listener answers it for the two feature hosts, and the proxy cannot
-read that stream, so the key stays inside the client's TLS up to the router.
+the port of each HTTPS call that the client sends through the proxy. The router key of a feature call crosses it inside
+the tunnel, where the client opens TLS and the router's feature listener answers it. The proxy cannot read that stream,
+so the key stays inside the client's TLS up to the router. In the client's setup a model request goes to the router's
+base URL and does not pass the proxy, so the proxy adds nothing to the key's protection there.
 
 ## Logs
 
@@ -193,7 +197,8 @@ At `debug` it adds the lines of a `CONNECT`, of a connection the allow list clos
 
 A `CONNECT` line names the target and where its bytes went, the upstream or the target itself. It names a host that a
 user's programs call, which is why it stays at `debug`. A `CONNECT` whose target the proxy cannot parse writes the line
-of a refused request in its place, and a head past a bound and a 200 that the proxy cannot write leave no line.
+of a refused request in its place, and a head that does not arrive whole within its bounds and a 200 that the proxy
+cannot write leave no line.
 
 No line holds a method, a path, a header or a body of a request. Inside a tunnel the proxy copies bytes and reads none
 of them, and for a request it refuses it logs the status of its answer alone.
