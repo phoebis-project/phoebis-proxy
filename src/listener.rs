@@ -118,10 +118,17 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
             return;
         }
     };
-    let (to_host, to_port) = tunnel::destination(host, port);
+    let (to_host, to_port) = tunnel::destination(host, port, &settings.upstream);
     let far = match tunnel::connect(&to_host, to_port).await {
         Ok(far) => far,
         Err(error) => {
+            // The default level shows an operator that the router cannot be reached, and the line names no target,
+            // since the names a user's programs call stay at `debug`. A target that names the upstream's own address
+            // writes it too, which shows no more than the start line. The line is written ahead of the 502, so it
+            // stands in the log once the client has read the answer.
+            if to_host == settings.upstream.host && to_port == settings.upstream.port {
+                eprintln!("cannot reach the upstream {}: {error}", settings.upstream);
+            }
             debug(
                 &settings,
                 format_args!(

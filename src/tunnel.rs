@@ -8,12 +8,29 @@ use tokio::io::{copy, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::timeout;
 
+use crate::config::Upstream;
+
 /// How long the connection to a destination may take, the lookup of its name included.
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
-/// Where a target's bytes go. Each target goes to itself here.
-pub(crate) fn destination(host: &str, port: u16) -> (String, u16) {
-    (host.to_owned(), port)
+/// The two hosts whose port 443 goes to the router's feature listener. The router's certificate authority is
+/// bound to the same two names, so a third name here would get no certificate there.
+const FEATURE_HOSTS: [&str; 2] = ["api.anthropic.com", "mcp-proxy.anthropic.com"];
+
+/// Where a target's bytes go: the upstream's host and port for a feature host on port 443, compared without case and
+/// without a trailing dot, and the target itself for each other target. A tunnel of a feature host to itself would let
+/// the client finish its TLS with the real host and send it the router key.
+pub(crate) fn destination(host: &str, port: u16, upstream: &Upstream) -> (String, u16) {
+    let name = host.strip_suffix('.').unwrap_or(host);
+    if port == 443
+        && FEATURE_HOSTS
+            .iter()
+            .any(|feature| feature.eq_ignore_ascii_case(name))
+    {
+        (upstream.host.clone(), upstream.port)
+    } else {
+        (host.to_owned(), port)
+    }
 }
 
 /// Connects to a destination within `CONNECT_TIMEOUT`.
