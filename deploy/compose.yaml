@@ -35,11 +35,11 @@ services:
     # which names the network a connection arrives from as the proxy's listener sees it. A rootful Docker Engine on
     # Linux maps a published port by NAT rules, so a client on another machine arrives under its own address and the
     # list names the clients' network, as the value below does. A connection that the engine's userland proxy carries
-    # arrives from the compose network's gateway instead. So does a connection from the Docker host itself, and each
-    # one under a rootless engine whose port driver passes no source address on. For those the list names the compose
-    # network's subnet. The second guard is the host's side of the published port, "127.0.0.1:8318:8318" for a proxy
-    # that serves its own machine alone. With PHOEBIS_PROXY_LOG=debug the proxy logs the source of a connection the
-    # allow list closed, which is the address the list must name.
+    # arrives from the compose network's gateway instead. So does a connection from the Docker host itself to the port
+    # on its loopback, and each one under a rootless engine whose port driver passes no source address on. For those the
+    # list names the compose network's subnet. The second guard is the host's side of the published port,
+    # "127.0.0.1:8318:8318" for a proxy that serves its own machine alone. With PHOEBIS_PROXY_LOG=debug the proxy logs
+    # the source of a connection the allow list closed, which is the address the list must name.
     environment:
       PHOEBIS_PROXY_ALLOW: 192.0.2.0/24
       # The proxy resolves the name at each CONNECT, so it needs no start order and no restart when the router's

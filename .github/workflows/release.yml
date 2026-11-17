@@ -15,7 +15,7 @@ permissions:
   contents: read
 concurrency:
   group: release-${{ github.event.release.tag_name || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   guard:
     runs-on: ubuntu-24.04
@@ -100,7 +100,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           outputs: ${{ needs.guard.outputs.exporter }}
           platforms: ${{ matrix.platform }}
-          # The docker exporter takes no attestation manifests, so the dry run and the pull request build none.
+          # The docker exporter takes no attestation manifests, so each run but a release builds none.
           provenance: ${{ needs.guard.outputs.push == 'true' && 'mode=max' || 'false' }}
           sbom: ${{ needs.guard.outputs.push == 'true' }}
           tags: ${{ needs.guard.outputs.image }}
@@ -198,7 +198,9 @@ jobs:
           else
             tar -czf "$ASSET.tar.gz" "$ASSET"
           fi
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      # The release's publish job is the one reader of the archives, so each other run packs them and uploads none.
+      - if: needs.guard.outputs.push == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           if-no-files-found: error
           name: asset-${{ matrix.target }}

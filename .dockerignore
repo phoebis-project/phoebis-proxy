@@ -1,2 +1,4 @@
 .git/
+# The stack example's storage key and admin secret sit in deploy/, which the build does not read.
+deploy/
 target/
