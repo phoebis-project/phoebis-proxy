@@ -1,0 +1,53 @@
+# Phoebis Router and phoebis-proxy in one project under bridge networking. The router's service is the one the
+# router's repository ships in its own deploy/compose.yaml, with the same ports. The proxy's port is published to the
+# network the clients come from, and a client's user sets HTTPS_PROXY to http://<this host>:8318.
+secrets:
+  router-storage-key:
+    # Compose bind-mounts a file secret with the host file's owner and mode: own it by uid 65532, mode 0400.
+    file: ./storage.key
+services:
+  phoebis:
+    # The mounted config.yaml holds the features block, which starts the router's feature listener on 8443:
+    #
+    #   features:
+    #     listen: 0.0.0.0:8443
+    #
+    # The port stays inside the compose network, where the proxy reaches it by the service name, so no line below
+    # publishes it.
+    env_file: phoebis.env
+    image: ghcr.io/phoebis-project/phoebis:0.1.0
+    ports:
+      - "8317:8317"
+      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:9464:9464"
+    restart: unless-stopped
+    secrets:
+      - router-storage-key
+    # The router's shutdown budget is 35 seconds after SIGTERM, and the grace period leaves five more.
+    stop_grace_period: 40s
+    volumes:
+      - ./config.yaml:/etc/phoebis/config.yaml:ro
+      - phoebis-data:/var/lib/phoebis
+      # A certificate pair you hold, mounted read-only and named under tls in config.yaml.
+      # - ./tls:/etc/phoebis/tls:ro
+  phoebis-proxy:
+    # The proxy tunnels each host for whoever reaches its port, so it needs two guards. The first is the allow list,
+    # which names the network a connection arrives from as the proxy's listener sees it. A rootful Docker Engine on
+    # Linux maps a published port by NAT rules, so a client on another machine arrives under its own address and the
+    # list names the clients' network, as the value below does. A connection that the engine's userland proxy carries
+    # arrives from the compose network's gateway instead. So does a connection from the Docker host itself, and each
+    # one under a rootless engine whose port driver passes no source address on. For those the list names the compose
+    # network's subnet. The second guard is the host's side of the published port, "127.0.0.1:8318:8318" for a proxy
+    # that serves its own machine alone. With PHOEBIS_PROXY_LOG=debug the proxy logs the source of a connection the
+    # allow list closed, which is the address the list must name.
+    environment:
+      PHOEBIS_PROXY_ALLOW: 192.0.2.0/24
+      # The proxy resolves the name at each CONNECT, so it needs no start order and no restart when the router's
+      # container changes its address.
+      PHOEBIS_PROXY_UPSTREAM: phoebis:8443
+    image: ghcr.io/phoebis-project/phoebis-proxy:0.1.0
+    ports:
+      - "8318:8318"
+    restart: unless-stopped
+volumes:
+  phoebis-data:

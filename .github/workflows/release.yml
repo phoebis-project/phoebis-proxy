@@ -1,0 +1,266 @@
+name: Release
+on:
+  # A pull request and a push to main build and smoke the five archives and the image for both platforms and push
+  # nothing, so a broken release build or Dockerfile is caught before a release runs it.
+  pull_request:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
+  # The dry run builds and smokes every target and both platforms and pushes nothing.
+  workflow_dispatch:
+# Read-only by default, and each job that reaches the registry or the release names the scope it needs.
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.event.release.tag_name || github.ref }}
+  cancel-in-progress: false
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    outputs:
+      exporter: ${{ steps.decide.outputs.exporter }}
+      image: ${{ steps.decide.outputs.image }}
+      push: ${{ steps.decide.outputs.push }}
+      registry_image: ${{ steps.decide.outputs.registry_image }}
+      version: ${{ steps.decide.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version=$(sed -n '/^\[package\]/,/^\[/{s/^version = "\([^"]*\)"$/\1/p}' Cargo.toml)
+          if ! { [ -n "$version" ] && [ "$(printf '%s\n' "$version" | wc -l)" = 1 ]; }; then
+            echo "Cargo.toml has no single package version"
+            exit 1
+          fi
+          # ghcr.io accepts lower-case names only, and GITHUB_REPOSITORY keeps the owner's spelling.
+          registry_image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "registry_image=$registry_image" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = release ]; then
+            printf '%s' "$TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$' \
+              || { echo "release tag '$TAG' is not X.Y.Z or X.Y.Z-suffix"; exit 1; }
+            [ "$TAG" = "$version" ] \
+              || { echo "release tag '$TAG' differs from the package version '$version' in Cargo.toml"; exit 1; }
+            {
+              echo "exporter=type=image,push-by-digest=true,name-canonical=true,push=true"
+              echo "image=$registry_image"
+              echo "push=true"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "exporter=type=docker"
+              echo "image=phoebis-proxy:smoke"
+              echo "push=false"
+            } >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+  image:
+    needs: guard
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            slug: linux-amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            slug: linux-arm64
+    # Each platform builds and smokes on a runner of its own architecture, so no step emulates another.
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    # A release pushes each platform's image by digest from here. A job's permissions cannot follow the event, so a
+    # pull request's build holds the scope on a path that never pushes.
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - if: needs.guard.outputs.push == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ needs.guard.outputs.registry_image }}
+      - id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          cache-from: type=gha,scope=${{ matrix.slug }}
+          cache-to: type=gha,scope=${{ matrix.slug }},mode=max
+          context: .
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: ${{ needs.guard.outputs.exporter }}
+          platforms: ${{ matrix.platform }}
+          # The docker exporter takes no attestation manifests, so the dry run and the pull request build none.
+          provenance: ${{ needs.guard.outputs.push == 'true' && 'mode=max' || 'false' }}
+          sbom: ${{ needs.guard.outputs.push == 'true' }}
+          tags: ${{ needs.guard.outputs.image }}
+      # A release smokes the digest it pushed, pulled from the registry. Each other run smokes the image the docker
+      # exporter loaded. The --version flag returns ahead of the bind, which the image's listen address refuses
+      # without an allow list.
+      - env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ needs.guard.outputs.image }}
+          PUSH: ${{ needs.guard.outputs.push }}
+          VERSION: ${{ needs.guard.outputs.version }}
+        run: |
+          if [ "$PUSH" = true ]; then
+            ref="$IMAGE@$DIGEST"
+          else
+            ref="$IMAGE"
+          fi
+          printed=$(docker run --rm "$ref" --version)
+          [ "$printed" = "phoebis-proxy $VERSION" ] \
+            || { echo "--version printed '$printed', not 'phoebis-proxy $VERSION'"; exit 1; }
+      - if: needs.guard.outputs.push == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+      - if: needs.guard.outputs.push == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          if-no-files-found: error
+          name: digest-${{ matrix.slug }}
+          path: ${{ runner.temp }}/digests/*
+          retention-days: 1
+  binary:
+    needs: guard
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - archive: tar.gz
+            exe: ""
+            runner: macos-15
+            target: aarch64-apple-darwin
+          - archive: tar.gz
+            exe: ""
+            runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+          - archive: tar.gz
+            exe: ""
+            runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - archive: zip
+            exe: .exe
+            runner: windows-2025
+            target: x86_64-pc-windows-msvc
+          - archive: tar.gz
+            exe: ""
+            runner: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+    # Each target builds on a runner of its own platform, so the smoke runs the binary the archive carries.
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      ARCHIVE: ${{ matrix.archive }}
+      ASSET: phoebis-proxy-${{ needs.guard.outputs.version }}-${{ matrix.target }}
+      BIN: target/${{ matrix.target }}/release/phoebis-proxy${{ matrix.exe }}
+      TARGET: ${{ matrix.target }}
+      VERSION: ${{ needs.guard.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # rustup reads rust-toolchain.toml: the pinned version, to which the release's target is added.
+      - run: rustup toolchain install && rustup target add "$TARGET"
+      - run: cargo build --release --locked --target "$TARGET"
+      - run: |
+          printed=$("./$BIN" --version)
+          [ "$printed" = "phoebis-proxy $VERSION" ] \
+            || { echo "--version printed '$printed', not 'phoebis-proxy $VERSION'"; exit 1; }
+      - if: contains(matrix.target, 'linux')
+        run: |
+          linked=$(file "$BIN")
+          case "$linked" in
+            *'statically linked'*|*'static-pie linked'*) ;;
+            *) echo "the binary is not static: $linked"; exit 1;;
+          esac
+      - run: |
+          mkdir "$ASSET"
+          cp "$BIN" LICENSE "$ASSET/"
+          if [ "$ARCHIVE" = zip ]; then
+            7z a -tzip "$ASSET.zip" "$ASSET"
+          else
+            tar -czf "$ASSET.tar.gz" "$ASSET"
+          fi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          if-no-files-found: error
+          name: asset-${{ matrix.target }}
+          path: ${{ env.ASSET }}.${{ matrix.archive }}
+          retention-days: 1
+  publish:
+    if: needs.guard.outputs.push == 'true'
+    needs: [guard, image, binary]
+    runs-on: ubuntu-24.04
+    # The one job that writes the repository's contents: it uploads the release's archives.
+    permissions:
+      contents: write
+      packages: write
+    env:
+      IMAGE: ${{ needs.guard.outputs.registry_image }}
+      VERSION: ${{ needs.guard.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+          pattern: digest-*
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          merge-multiple: true
+          path: ${{ runner.temp }}/assets
+          pattern: asset-*
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          # The major-only tag would name 0.x releases that break each other, and latest never names a prerelease.
+          flavor: latest=false
+          images: ${{ needs.guard.outputs.registry_image }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ env.VERSION }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.VERSION }}
+            type=semver,pattern={{major}},value=${{ env.VERSION }},enable=${{ !startsWith(env.VERSION, '0.') }}
+            type=raw,value=latest,enable=${{ !contains(env.VERSION, '-') }}
+            type=sha,prefix=sha-
+      - env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          args=()
+          while IFS= read -r tag; do [ -n "$tag" ] && args+=(-t "$tag"); done <<< "$TAGS"
+          refs=()
+          for digest in *; do refs+=("$IMAGE@sha256:$digest"); done
+          docker buildx imagetools create "${args[@]}" "${refs[@]}"
+      - run: |
+          docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{json .Manifest}}' \
+            | jq -e '[.manifests[] | select(.platform.os == "linux") | .platform.architecture] | unique
+                     | contains(["amd64", "arm64"])'
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ${{ runner.temp }}/assets
+        run: |
+          sha256sum phoebis-proxy-*.tar.gz phoebis-proxy-*.zip > SHA256SUMS
+          gh release upload "$VERSION" phoebis-proxy-*.tar.gz phoebis-proxy-*.zip SHA256SUMS --clobber \
+            --repo "$GITHUB_REPOSITORY"
