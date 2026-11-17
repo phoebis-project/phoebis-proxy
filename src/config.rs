@@ -6,7 +6,7 @@ use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::str::FromStr;
 
 /// A source network of the allow list, `address/prefix`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct Network {
     address: IpAddr,
     prefix: u8,
@@ -62,10 +62,10 @@ impl Network {
 }
 
 /// The router's feature listener, a host and a port.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct Upstream {
-    pub host: String,
-    pub port: u16,
+    pub(crate) host: String,
+    pub(crate) port: u16,
 }
 
 impl FromStr for Upstream {
@@ -94,14 +94,14 @@ impl fmt::Display for Upstream {
 }
 
 /// How much the proxy writes to standard error. `Debug` adds a line per `CONNECT`, which names the target's host.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum LogLevel {
     Debug,
     Info,
 }
 
 /// The four settings of a start.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Settings {
     /// The source networks a client connects from. An empty list admits each source, which `Proxy::bind` takes on a
     /// loopback address alone.
@@ -144,6 +144,13 @@ mod tests {
     }
 
     #[test]
+    fn an_ipv6_network_masks_with_its_own_width() {
+        let network: Network = "fd00::/8".parse().unwrap();
+        assert!(network.contains("fd12::1".parse().unwrap()));
+        assert!(!network.contains("fe00::1".parse().unwrap()));
+    }
+
+    #[test]
     fn a_prefix_past_the_address_width_is_refused() {
         assert!("10.0.0.0/33".parse::<Network>().is_err());
         assert!("10.0.0.0/32".parse::<Network>().is_ok());
@@ -154,12 +161,10 @@ mod tests {
     #[test]
     fn an_upstream_without_a_port_is_refused() {
         assert!("router.example".parse::<Upstream>().is_err());
+        let upstream: Upstream = "router.example:8443".parse().unwrap();
         assert_eq!(
-            "router.example:8443".parse(),
-            Ok(Upstream {
-                host: "router.example".to_owned(),
-                port: 8443,
-            })
+            (upstream.host.as_str(), upstream.port),
+            ("router.example", 8443)
         );
     }
 }

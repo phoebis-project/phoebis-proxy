@@ -9,7 +9,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Notify};
 use tokio::time::timeout;
 
-use common::{connect, settings, start, Fake, BOUND};
+use common::{answer_head, connect, settings, start, Fake, BOUND};
 
 /// A far side of the test's own on `127.0.0.1:0`, which runs `serve` on each connection it accepts. The listener and
 /// its connections live until the test's runtime ends.
@@ -28,8 +28,8 @@ where
     addr
 }
 
-/// Reads the two bytes `go` the test sends through its tunnel. The development host's probe sends nothing, so its
-/// connection never passes this read and the far side acts on the tunnel's connection alone.
+/// Reads the two bytes `go` the test sends through its tunnel. A connection that sends nothing, as a port scanner or a
+/// monitoring daemon opens, never passes this read, so the far side acts on the tunnel's connection alone.
 async fn the_tunnels_connection(stream: &mut TcpStream) -> bool {
     let mut go = [0; 2];
     stream.read_exact(&mut go).await.is_ok() && &go == b"go"
@@ -59,6 +59,33 @@ async fn another_host_is_tunneled_to_itself() {
         b"",
         "the upstream received bytes of another host's tunnel"
     );
+}
+
+#[tokio::test]
+async fn bytes_behind_the_head_reach_the_far_side() {
+    let echo = Fake::start(b"", b"").await;
+    let upstream = Fake::start(b"", b"").await;
+    let proxy = start(settings(&[], upstream.addr)).await;
+
+    // The head and the first bytes of the tunnel in one write, as a client that does not wait for the 200 sends them.
+    let target = echo.addr.to_string();
+    let mut client = TcpStream::connect(proxy.addr).await.unwrap();
+    client
+        .write_all(format!("CONNECT {target} HTTP/1.1\r\nHost: {target}\r\n\r\nping").as_bytes())
+        .await
+        .unwrap();
+    let head = answer_head(&mut client).await;
+    assert!(
+        head.starts_with("HTTP/1.1 200 "),
+        "the CONNECT answered {head:?}"
+    );
+    let mut echoed = [0; 4];
+    timeout(BOUND, client.read_exact(&mut echoed))
+        .await
+        .expect("the bytes behind the head come back within five seconds")
+        .unwrap();
+
+    assert_eq!(&echoed, b"ping");
 }
 
 #[tokio::test]

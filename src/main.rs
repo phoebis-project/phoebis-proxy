@@ -85,13 +85,8 @@ async fn main() -> ExitCode {
         env!("CARGO_PKG_VERSION"),
         proxy.local_addr()
     );
-    match proxy.serve(stop).await {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(error) => {
-            eprintln!("the proxy stopped: {error}");
-            ExitCode::FAILURE
-        }
-    }
+    proxy.serve(stop).await;
+    ExitCode::SUCCESS
 }
 
 /// Resolves on the first interrupt, or on the first termination signal.

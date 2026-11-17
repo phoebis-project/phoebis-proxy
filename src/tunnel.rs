@@ -9,7 +9,7 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 
 /// How long the connection to a destination may take, the lookup of its name included.
-pub(crate) const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Where a target's bytes go. Each target goes to itself here.
 pub(crate) fn destination(host: &str, port: u16) -> (String, u16) {
@@ -23,7 +23,7 @@ pub(crate) async fn connect(host: &str, port: u16) -> io::Result<TcpStream> {
         .unwrap_or_else(|_| {
             Err(io::Error::new(
                 io::ErrorKind::TimedOut,
-                "no connection within ten seconds",
+                "the connection attempt timed out",
             ))
         })
 }

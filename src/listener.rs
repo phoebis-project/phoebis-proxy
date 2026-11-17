@@ -15,9 +15,9 @@ use crate::config::{authority, LogLevel, Settings};
 use crate::tunnel;
 
 /// The most bytes a `CONNECT` head takes, its blank line included.
-pub(crate) const HEAD_LIMIT: usize = 8 * 1024;
+const HEAD_LIMIT: usize = 8 * 1024;
 /// How long a client has to send its `CONNECT` head.
-pub(crate) const HEAD_TIMEOUT: Duration = Duration::from_secs(30);
+const HEAD_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The wait after an accept that failed for want of a resource, such as a file descriptor, so the loop does not spin
 /// while the shortage lasts.
@@ -49,12 +49,12 @@ pub(crate) async fn accept(
     listener: TcpListener,
     settings: Settings,
     stop: impl Future<Output = ()>,
-) -> io::Result<()> {
+) {
     let settings = Arc::new(settings);
     tokio::pin!(stop);
     loop {
         let accepted = tokio::select! {
-            () = &mut stop => return Ok(()),
+            () = &mut stop => return,
             accepted = listener.accept() => accepted,
         };
         match accepted {
@@ -75,12 +75,14 @@ pub(crate) async fn accept(
                     error.kind(),
                     ErrorKind::ConnectionAborted | ErrorKind::ConnectionReset
                 ) => {}
+            // No accept error ends the loop: a shortage passes, and an end of `serve` would drop each open tunnel with
+            // the process.
             Err(error) => {
                 eprintln!(
-                    "accepting a connection failed, the next attempt follows in a second: {error}"
+                    "accepting a connection failed, the next attempt follows a pause: {error}"
                 );
                 tokio::select! {
-                    () = &mut stop => return Ok(()),
+                    () = &mut stop => return,
                     () = sleep(ACCEPT_PAUSE) => {}
                 }
             }
@@ -107,13 +109,10 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
     let (host, port) = match connect_target(&head) {
         Ok(target) => target,
         Err(refusal) => {
+            // A request line holds a method and a path, which no line of the log carries.
             debug(
                 &settings,
-                format_args!(
-                    "refused {:?} with {}",
-                    String::from_utf8_lossy(request_line(&head)),
-                    refusal.status
-                ),
+                format_args!("refused a request with {}", refusal.status),
             );
             let _ = client.write_all(refusal.answer).await;
             return;
@@ -177,7 +176,8 @@ async fn read_head(client: &mut TcpStream) -> io::Result<Option<(Vec<u8>, Vec<u8
 
 /// The target of a request line `CONNECT <host>:<port> HTTP/1.1`, or the refusal of another request.
 fn connect_target(head: &[u8]) -> Result<(&str, u16), Refusal> {
-    let line = std::str::from_utf8(request_line(head)).map_err(|_| BAD_REQUEST)?;
+    let line = head.split(|byte| *byte == b'\r').next().unwrap_or_default();
+    let line = std::str::from_utf8(line).map_err(|_| BAD_REQUEST)?;
     let mut parts = line.split(' ');
     let (Some(method), Some(target), Some(version), None) =
         (parts.next(), parts.next(), parts.next(), parts.next())
@@ -191,10 +191,6 @@ fn connect_target(head: &[u8]) -> Result<(&str, u16), Refusal> {
         return Err(BAD_REQUEST);
     }
     authority(target).ok_or(BAD_REQUEST)
-}
-
-fn request_line(head: &[u8]) -> &[u8] {
-    head.split(|byte| *byte == b'\r').next().unwrap_or_default()
 }
 
 fn debug(settings: &Settings, line: fmt::Arguments<'_>) {

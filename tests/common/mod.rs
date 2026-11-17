@@ -8,7 +8,7 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use phoebis_proxy::{LogLevel, Proxy, Settings, Upstream};
+use phoebis_proxy::{LogLevel, Proxy, Settings};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
@@ -24,7 +24,7 @@ pub const BOUND: Duration = Duration::from_secs(5);
 pub struct Running {
     pub addr: SocketAddr,
     _stop: oneshot::Sender<()>,
-    _task: JoinHandle<std::io::Result<()>>,
+    _task: JoinHandle<()>,
 }
 
 pub async fn start(settings: Settings) -> Running {
@@ -51,15 +51,12 @@ pub fn settings(allow: &[&str], upstream: SocketAddr) -> Settings {
             .collect(),
         listen: "127.0.0.1:0".parse().unwrap(),
         log: LogLevel::Info,
-        upstream: Upstream {
-            host: upstream.ip().to_string(),
-            port: upstream.port(),
-        },
+        upstream: upstream.to_string().parse().unwrap(),
     }
 }
 
 /// A plain TCP listener on `127.0.0.1:0` that accepts in a loop and keeps each byte it reads. A connection that
-/// sends nothing, as the development host's probe opens, adds nothing to `received`.
+/// sends nothing, as a port scanner or a monitoring daemon opens, adds nothing to `received`.
 pub struct Fake {
     pub addr: SocketAddr,
     received: Arc<Mutex<Vec<u8>>>,
@@ -138,6 +135,12 @@ pub async fn connect(proxy: SocketAddr, target: &str) -> (TcpStream, String) {
         .write_all(format!("CONNECT {target} HTTP/1.1\r\nHost: {target}\r\n\r\n").as_bytes())
         .await
         .unwrap();
+    let head = answer_head(&mut stream).await;
+    (stream, head)
+}
+
+/// Reads the proxy's answer head up to its blank line, or up to the end of the stream.
+pub async fn answer_head(stream: &mut TcpStream) -> String {
     let mut head = Vec::new();
     // One byte per read, so no byte of the tunnel behind the blank line is taken from the stream.
     let read = async {
@@ -152,5 +155,5 @@ pub async fn connect(proxy: SocketAddr, target: &str) -> (TcpStream, String) {
     timeout(BOUND, read)
         .await
         .expect("the proxy answers the CONNECT within five seconds");
-    (stream, String::from_utf8(head).unwrap())
+    String::from_utf8(head).unwrap()
 }

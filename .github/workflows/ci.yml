@@ -25,4 +25,7 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --locked -- -D warnings
+      # The test targets turn on the dev-dependency's features for the library too, so this build is the one that
+      # compiles the package with the features a release has.
+      - run: cargo build --locked
       - run: cargo test --locked

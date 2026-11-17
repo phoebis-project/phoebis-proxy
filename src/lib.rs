@@ -9,7 +9,6 @@ mod tunnel;
 
 use std::fmt;
 use std::future::Future;
-use std::io;
 use std::net::SocketAddr;
 
 use tokio::net::TcpListener;
@@ -82,7 +81,7 @@ impl Proxy {
     }
 
     /// Accepts until `stop` resolves.
-    pub async fn serve(self, stop: impl Future<Output = ()> + Send) -> io::Result<()> {
-        listener::accept(self.listener, self.settings, stop).await
+    pub async fn serve(self, stop: impl Future<Output = ()> + Send) {
+        listener::accept(self.listener, self.settings, stop).await;
     }
 }
