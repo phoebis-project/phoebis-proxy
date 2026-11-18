@@ -128,7 +128,9 @@ Each of 400, 405 and 502 has an empty body, and the proxy closes the connection 
 means that the proxy cannot reach the router.
 
 Behind a 200 the proxy copies bytes in both directions until one side closes, and then closes the other. It reads none
-of them. A tunnel has no idle limit, and TCP keepalive is on for both of its sockets, so a dead peer ends it.
+of them. A tunnel has no idle limit, and TCP keepalive is on for both of its sockets, so a dead peer ends it. Where a
+write toward one side waits five minutes without that side taking a byte, the proxy closes both sides. Each byte the
+side takes starts the five minutes again, so a slow reader keeps its tunnel however long the transfer runs.
 
 A client has 30 seconds to send its `CONNECT` head, and a head takes 8 KiB at most, its blank line included. The proxy
 closes a connection that passes either bound and sends no answer.
