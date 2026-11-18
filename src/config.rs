@@ -91,7 +91,9 @@ impl fmt::Display for Upstream {
     }
 }
 
-/// How much the proxy writes to standard error. `Debug` adds a line per `CONNECT`, which names the target's host.
+/// How much the proxy writes to standard error. `Info` writes the lines of a connection the listener cannot accept, of
+/// a failed connect to the upstream and of the start. `Debug` adds the lines of a `CONNECT`, of a connection the allow
+/// list closed and of a refused request, and a `CONNECT` line names the target's host.
 #[derive(Clone, Debug, PartialEq)]
 pub enum LogLevel {
     Debug,

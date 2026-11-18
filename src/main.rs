@@ -31,7 +31,9 @@ struct Args {
     )]
     listen: SocketAddr,
 
-    /// `info` writes the start line, and `debug` adds one line per CONNECT, which names the target's host.
+    /// `info` writes the lines of a connection the listener cannot accept, of a failed connect to the upstream and of
+    /// the start. `debug` adds the lines of a CONNECT, of a connection the allow list closed and of a refused request,
+    /// and a CONNECT line names the target's host.
     #[arg(
         long,
         env = "PHOEBIS_PROXY_LOG",
