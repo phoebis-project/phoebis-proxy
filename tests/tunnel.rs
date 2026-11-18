@@ -248,6 +248,43 @@ async fn a_write_that_takes_no_byte_past_the_limit_ends_the_tunnel() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn a_client_that_takes_no_byte_past_the_limit_ends_the_tunnel() {
+    let (ended, mut ends) = mpsc::unbounded_channel();
+    let far = far_side(move |mut stream| {
+        let ended = ended.clone();
+        async move {
+            if !the_tunnels_connection(&mut stream).await {
+                return;
+            }
+            // A write can still land in the system's buffer after the proxy closed this connection, so the far side
+            // writes until a write fails and reports that end.
+            let _ = copy(&mut repeat(0), &mut stream).await;
+            let _ = ended.send(());
+        }
+    })
+    .await;
+    let upstream = Fake::start(b"", b"").await;
+    let proxy = start(settings(&[], upstream.addr)).await;
+
+    let (mut client, head) = held(connect(proxy.addr, &far.to_string()))
+        .await
+        .expect("the proxy answers the CONNECT within five seconds");
+    assert!(
+        head.starts_with("HTTP/1.1 200 "),
+        "the CONNECT answered {head:?}"
+    );
+    // The client reads nothing more and keeps its connection to the end, so the tunnel's write toward it stands once
+    // the buffers on the way are full. The test holds no timer, so the clock then moves on to the tunnel's own limit.
+    client.write_all(b"go").await.unwrap();
+
+    let end = within(ends.recv()).await;
+    assert!(
+        end.is_some(),
+        "the far side's write still stood after five seconds, so the tunnel outlived its limit toward the client"
+    );
+}
+
+#[tokio::test(start_paused = true)]
 async fn a_tunnel_that_idles_past_the_limit_still_carries_bytes() {
     let echo = Fake::start(b"", b"").await;
     let upstream = Fake::start(b"", b"").await;
