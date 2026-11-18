@@ -41,23 +41,21 @@ impl fmt::Display for Network {
 impl Network {
     /// Whether `peer` lies in the network, an IPv4-mapped IPv6 peer read as its IPv4 address.
     pub(crate) fn contains(&self, peer: IpAddr) -> bool {
-        // A prefix of 0 shifts by the whole width, which `checked_shl` answers with `None`: a mask with no bits, under
-        // which the network holds each address of its family.
-        match (self.address, peer.to_canonical()) {
-            (IpAddr::V4(network), IpAddr::V4(peer)) => {
-                let mask = u32::MAX
-                    .checked_shl(32 - u32::from(self.prefix))
-                    .unwrap_or(0);
-                (u32::from(network) & mask) == (u32::from(peer) & mask)
-            }
-            (IpAddr::V6(network), IpAddr::V6(peer)) => {
-                let mask = u128::MAX
-                    .checked_shl(128 - u32::from(self.prefix))
-                    .unwrap_or(0);
-                (u128::from(network) & mask) == (u128::from(peer) & mask)
-            }
-            _ => false,
-        }
+        let (network, peer, width) = match (self.address, peer.to_canonical()) {
+            (IpAddr::V4(network), IpAddr::V4(peer)) => (
+                u128::from(u32::from(network)),
+                u128::from(u32::from(peer)),
+                32,
+            ),
+            (IpAddr::V6(network), IpAddr::V6(peer)) => (u128::from(network), u128::from(peer), 128),
+            _ => return false,
+        };
+        // An IPv6 prefix of 0 shifts by the whole width, which `checked_shl` answers with `None`: a mask with no bits,
+        // under which the network holds each IPv6 address.
+        let mask = u128::MAX
+            .checked_shl(width - u32::from(self.prefix))
+            .unwrap_or(0);
+        (network & mask) == (peer & mask)
     }
 }
 

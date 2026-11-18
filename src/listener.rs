@@ -2,7 +2,7 @@
 
 use std::fmt;
 use std::future::Future;
-use std::io::{self, ErrorKind};
+use std::io::ErrorKind;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -103,11 +103,11 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
     let started = Instant::now();
     // A head past either bound gets no answer: the connection closes, and what a client sends costs no more than the
     // two bounds.
-    let Ok(Ok(Some((head, early)))) = timeout(HEAD_TIMEOUT, read_head(&mut client)).await else {
+    let Ok(Some((head, early))) = timeout(HEAD_TIMEOUT, read_head(&mut client)).await else {
         return;
     };
     let (host, port) = match connect_target(&head) {
-        Ok(target) => target,
+        Ok((host, port)) => (host.to_owned(), port),
         Err(refusal) => {
             // A request line holds a method and a path, which no line of the log carries.
             debug(
@@ -118,8 +118,9 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
             return;
         }
     };
-    let (to_host, to_port) = tunnel::destination(host, port, &settings.upstream);
-    let far = match tunnel::connect(&to_host, to_port).await {
+    drop(head);
+    let (to_host, to_port) = tunnel::destination(&host, port, &settings.upstream);
+    let far = match tunnel::connect(to_host, to_port).await {
         Ok(far) => far,
         Err(error) => {
             // The default level shows an operator that the router cannot be reached, and the line names no target,
@@ -156,14 +157,14 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
 }
 
 /// Reads up to the blank line that ends a head. Answers the head and the bytes that arrived behind it in the same
-/// read, or `None` where the client ends first or sends `HEAD_LIMIT` bytes without the blank line.
-async fn read_head(client: &mut TcpStream) -> io::Result<Option<(Vec<u8>, Vec<u8>)>> {
+/// read, or `None` where a read fails, the client ends first or it sends `HEAD_LIMIT` bytes without the blank line.
+async fn read_head(client: &mut TcpStream) -> Option<(Vec<u8>, Vec<u8>)> {
     let mut buffer = vec![0; HEAD_LIMIT];
     let mut filled = 0;
     while filled < buffer.len() {
-        let read = client.read(&mut buffer[filled..]).await?;
+        let read = client.read(&mut buffer[filled..]).await.ok()?;
         if read == 0 {
-            return Ok(None);
+            return None;
         }
         // The blank line can straddle two reads, so the search starts three bytes ahead of this read's first byte.
         let from = filled.saturating_sub(3);
@@ -175,10 +176,10 @@ async fn read_head(client: &mut TcpStream) -> io::Result<Option<(Vec<u8>, Vec<u8
             let end = from + at + 4;
             let early = buffer[end..filled].to_vec();
             buffer.truncate(end);
-            return Ok(Some((buffer, early)));
+            return Some((buffer, early));
         }
     }
-    Ok(None)
+    None
 }
 
 /// The target of a request line `CONNECT <host>:<port> HTTP/1.1`, or the refusal of another request.

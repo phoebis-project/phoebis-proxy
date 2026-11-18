@@ -20,16 +20,16 @@ const FEATURE_HOSTS: [&str; 2] = ["api.anthropic.com", "mcp-proxy.anthropic.com"
 /// Where a target's bytes go: the upstream's host and port for a feature host on port 443, compared without case and
 /// without a trailing dot, and the target itself for each other target. A tunnel of a feature host to itself would let
 /// the client finish its TLS with the real host and send it the router key.
-pub(crate) fn destination(host: &str, port: u16, upstream: &Upstream) -> (String, u16) {
+pub(crate) fn destination<'a>(host: &'a str, port: u16, upstream: &'a Upstream) -> (&'a str, u16) {
     let name = host.strip_suffix('.').unwrap_or(host);
     if port == 443
         && FEATURE_HOSTS
             .iter()
             .any(|feature| feature.eq_ignore_ascii_case(name))
     {
-        (upstream.host.clone(), upstream.port)
+        (upstream.host.as_str(), upstream.port)
     } else {
-        (host.to_owned(), port)
+        (host, port)
     }
 }
 
