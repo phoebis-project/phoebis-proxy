@@ -149,6 +149,12 @@ mod tests {
     }
 
     #[test]
+    fn an_ipv6_network_with_a_prefix_of_0_admits_an_ipv6_peer() {
+        let network: Network = "::/0".parse().unwrap();
+        assert!(network.contains("2001:db8::1".parse().unwrap()));
+    }
+
+    #[test]
     fn a_prefix_past_the_address_width_is_refused() {
         assert!("10.0.0.0/33".parse::<Network>().is_err());
         assert!("10.0.0.0/32".parse::<Network>().is_ok());
