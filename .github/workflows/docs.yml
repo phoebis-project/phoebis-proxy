@@ -15,8 +15,9 @@ jobs:
     secrets:
       DOCS_APP_PRIVATE_KEY: ${{ secrets.DOCS_APP_PRIVATE_KEY }}
   start-deploy:
-    # The site deploys from phoebis-docs alone. A push to main here starts that workflow, which builds from the four
-    # main heads. In a fork the job is skipped, so a fork's own main starts no deploy.
+    # The site deploys from phoebis-docs alone. A push to main here starts that workflow, which builds each product at
+    # its newest commit on main with a green run of this workflow. In a fork the job is skipped, so a fork's own main
+    # starts no deploy.
     if: github.event_name == 'push' && github.repository_owner == 'phoebis-project'
     needs: site
     # The start key is a secret of this environment, whose branch rule allows main alone, so a workflow on another
