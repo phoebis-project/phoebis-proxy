@@ -20,7 +20,7 @@ A start needs the upstream alone: `phoebis-proxy --upstream router.example:8443`
 the users of its own machine.
 
 The documentation lives under [`docs/site/`](docs/site/index.md), starting with [Install](docs/site/install.md), and is
-published at <https://phoebis-project.github.io/phoebis-docs/> once GitHub Pages is enabled for the documentation site.
+published at <https://phoebis-project.github.io/phoebis-docs/>.
 
 ## License
 
