@@ -22,3 +22,5 @@ proxy writes at each level.
 - The proxy has no proxy authentication, so the allow list and the listen address alone decide who can use it.
 - The proxy serves plain HTTP on its own address, so a client names it with an `http://` address and the `CONNECT` lines
   cross the network to it in the clear.
+
+<!-- This line exists to run the documentation build on a pull request. -->
