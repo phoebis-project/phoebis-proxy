@@ -3,7 +3,6 @@ use std::io;
 use std::net::SocketAddr;
 use std::process::ExitCode;
 
-use clap::builder::{PossibleValuesParser, TypedValueParser};
 use clap::Parser;
 use phoebis_proxy::{LogLevel, Network, Proxy, Settings, Upstream};
 
@@ -38,9 +37,7 @@ struct Args {
         long,
         env = "PHOEBIS_PROXY_LOG",
         value_name = "LEVEL",
-        default_value = "info",
-        value_parser = PossibleValuesParser::new(["debug", "info"])
-            .map(|level| if level == "debug" { LogLevel::Debug } else { LogLevel::Info }),
+        default_value = "info"
     )]
     log_level: LogLevel,
 
