@@ -28,7 +28,19 @@ impl FromStr for Network {
             .ok()
             .filter(|prefix| *prefix <= width)
             .ok_or_else(|| format!("the prefix length is a number from 0 to {width}"))?;
-        Ok(Network { address, prefix })
+        // A mapped entry with a prefix of 96 or more names IPv4 peers alone, and `contains` reads a mapped peer as its
+        // IPv4 address, so the entry is stored as the IPv4 network it names.
+        let mapped = match address {
+            IpAddr::V6(entry) if prefix >= 96 => entry.to_ipv4_mapped(),
+            _ => None,
+        };
+        Ok(match mapped {
+            Some(entry) => Network {
+                address: IpAddr::V4(entry),
+                prefix: prefix - 96,
+            },
+            None => Network { address, prefix },
+        })
     }
 }
 
@@ -172,5 +184,19 @@ mod tests {
             (upstream.host.as_str(), upstream.port),
             ("router.example", 8443)
         );
+    }
+
+    #[test]
+    fn a_mapped_entry_with_a_prefix_of_96_or_more_is_its_ipv4_network() {
+        let network: Network = "::ffff:0.0.0.0/96".parse().unwrap();
+        assert!(network.contains("10.1.2.3".parse().unwrap()));
+        assert!(network.contains("::ffff:10.1.2.3".parse().unwrap()));
+        assert_eq!(network.to_string(), "0.0.0.0/0");
+    }
+
+    #[test]
+    fn a_mapped_entry_with_a_prefix_under_96_stays_an_ipv6_network() {
+        let network: Network = "::ffff:0.0.0.0/95".parse().unwrap();
+        assert!(network.contains("::fffe:0:1".parse().unwrap()));
     }
 }

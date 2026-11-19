@@ -11,8 +11,10 @@ environment, and a flag wins over its variable.
 | The upstream, the host and the port of the router's feature listener | `--upstream` | `PHOEBIS_PROXY_UPSTREAM` | none, required |
 
 **The allow list** is a comma list of networks, each as `address/prefix` in IPv4 or IPv6, such as
-`192.0.2.0/24,2001:db8::/32`. Where a list is set, on a loopback address too, the proxy serves a connection from a
-listed network alone. It closes each other connection before it reads a byte and sends no answer.
+`192.0.2.0/24,2001:db8::/32`. The proxy reads an entry in the IPv4-mapped form with a prefix of 96 or more, such as
+`::ffff:192.0.2.0/120`, as its IPv4 network, `192.0.2.0/24`, and prints it that way in its start line. Where a list is
+set, on a loopback address too, the proxy serves a connection from a listed network alone. It closes each other
+connection before it reads a byte and sends no answer.
 
 **The listen address** is an IP address with a port.
 
