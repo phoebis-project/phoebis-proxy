@@ -143,12 +143,12 @@ pub(crate) fn authority(text: &str) -> Option<(&str, u16)> {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_'));
     // One trailing dot is the root's, and each label ahead of it holds a byte or more, so a name with a dot pair is
     // no host and never reaches the lookup.
-    let labelled = host
+    let labeled = host
         .strip_suffix('.')
         .unwrap_or(host)
         .split('.')
         .all(|label| !label.is_empty());
-    (name && labelled).then_some((host, port))
+    (name && labeled).then_some((host, port))
 }
 
 #[cfg(test)]
