@@ -1,0 +1,46 @@
+name: Documentation
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  site:
+    uses: phoebis-project/phoebis-docs/.github/workflows/build.yml@main
+    with:
+      product: proxy
+      ref: ${{ github.sha }}
+    secrets:
+      DOCS_APP_PRIVATE_KEY: ${{ secrets.DOCS_APP_PRIVATE_KEY }}
+  start-deploy:
+    # The site deploys from phoebis-docs alone. A push to main here starts that workflow, which builds from the four
+    # main heads. A fork's own main starts nothing and fails nothing.
+    if: github.event_name == 'push' && github.repository_owner == 'phoebis-project'
+    needs: site
+    runs-on: ubuntu-24.04
+    env:
+      # A step's condition cannot read a secret, so the job states once for each half of the start credential
+      # whether it is set.
+      CLIENT_ID_SET: ${{ vars.DOCS_DEPLOY_APP_CLIENT_ID != '' }}
+      PRIVATE_KEY_SET: ${{ secrets.DOCS_DEPLOY_APP_PRIVATE_KEY != '' }}
+    steps:
+      # Without the start credential this push would end green and start no deploy. The line says for each half
+      # whether it is set and prints no value.
+      - if: env.CLIENT_ID_SET != 'true' || env.PRIVATE_KEY_SET != 'true'
+        run: |
+          echo "::error::No deploy started. Variable DOCS_DEPLOY_APP_CLIENT_ID set: $CLIENT_ID_SET." \
+            "Secret DOCS_DEPLOY_APP_PRIVATE_KEY set: $PRIVATE_KEY_SET."
+          exit 1
+      - id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.DOCS_DEPLOY_APP_CLIENT_ID }}
+          owner: phoebis-project
+          permission-actions: write
+          private-key: ${{ secrets.DOCS_DEPLOY_APP_PRIVATE_KEY }}
+          repositories: phoebis-docs
+      - run: gh workflow run deploy.yml --repo phoebis-project/phoebis-docs --ref main
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
