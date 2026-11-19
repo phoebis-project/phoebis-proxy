@@ -16,7 +16,7 @@ jobs:
       DOCS_APP_PRIVATE_KEY: ${{ secrets.DOCS_APP_PRIVATE_KEY }}
   start-deploy:
     # The site deploys from phoebis-docs alone. A push to main here starts that workflow, which builds from the four
-    # main heads. A fork's own main starts nothing and fails nothing.
+    # main heads. In a fork the job is skipped, so a fork's own main starts no deploy.
     if: github.event_name == 'push' && github.repository_owner == 'phoebis-project'
     needs: site
     runs-on: ubuntu-24.04
@@ -26,8 +26,8 @@ jobs:
       CLIENT_ID_SET: ${{ vars.DOCS_DEPLOY_APP_CLIENT_ID != '' }}
       PRIVATE_KEY_SET: ${{ secrets.DOCS_DEPLOY_APP_PRIVATE_KEY != '' }}
     steps:
-      # Without the start credential this push would end green and start no deploy. The line says for each half
-      # whether it is set and prints no value.
+      # The token step would fail on a missing half with the action's own error. The line says for each half whether it
+      # is set and prints no value.
       - if: env.CLIENT_ID_SET != 'true' || env.PRIVATE_KEY_SET != 'true'
         run: |
           echo "::error::No deploy started. Variable DOCS_DEPLOY_APP_CLIENT_ID set: $CLIENT_ID_SET." \

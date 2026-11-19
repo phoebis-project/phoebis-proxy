@@ -30,10 +30,9 @@ allow list closed, which is the address the list has to name.
 **The host's side of the published port** stays on loopback for a proxy that serves its own machine alone:
 `127.0.0.1:8318:8318` in place of `8318:8318`.
 
-A client's user sets `HTTPS_PROXY` to the proxy's published address, and the
-[claude.ai features](../router/claude-ai-features.md) page of the router's documentation holds the client's whole setup,
-of which that variable is one line. The same page covers the router's certificate authority, which the client has to
-trust.
+A client's user sets `HTTPS_PROXY` to the proxy's published address, and the [claude.ai
+features](../router/claude-ai-features.md) page of the router's documentation holds the client's whole setup, of which
+that variable is one line. The same page covers the router's certificate authority, which the client has to trust.
 
 Between a client and a proxy on another machine the `CONNECT` lines cross the network in the clear: the host name and
 the port of each HTTPS call that the client sends through the proxy. The router key of a feature call crosses it inside
