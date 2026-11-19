@@ -1,0 +1,8 @@
+nav = [
+  { "Overview" = "index.md" },
+  { "Install" = "install.md" },
+  { "Settings" = "settings.md" },
+  { "What a CONNECT gets" = "connect.md" },
+  { "Beside Phoebis Router" = "beside-the-router.md" },
+  { "Logs" = "logs.md" },
+]
