@@ -124,7 +124,7 @@ pub struct Settings {
 }
 
 /// Splits `host:port`, the form of a `CONNECT` target and of the upstream. An IPv6 address stands in brackets, and its
-/// host comes back without them.
+/// host comes back without them. A name with an empty label is no host, one trailing dot aside.
 pub(crate) fn authority(text: &str) -> Option<(&str, u16)> {
     let (host, port) = text.rsplit_once(':')?;
     let port = port.parse().ok()?;
@@ -141,7 +141,14 @@ pub(crate) fn authority(text: &str) -> Option<(&str, u16)> {
         && host
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_'));
-    name.then_some((host, port))
+    // One trailing dot is the root's, and each label ahead of it holds a byte or more, so a name with a dot pair is
+    // no host and never reaches the lookup.
+    let labelled = host
+        .strip_suffix('.')
+        .unwrap_or(host)
+        .split('.')
+        .all(|label| !label.is_empty());
+    (name && labelled).then_some((host, port))
 }
 
 #[cfg(test)]

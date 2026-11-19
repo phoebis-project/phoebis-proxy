@@ -66,3 +66,15 @@ async fn an_upstream_that_refuses_the_connection_answers_the_connect() {
         .unwrap();
     assert_eq!(read, 0, "the proxy sent bytes behind its 502");
 }
+
+#[tokio::test]
+async fn a_connect_for_a_host_with_an_empty_label_gets_the_400() {
+    let upstream = Fake::start(b"hello", b"world").await;
+    let proxy = start(settings(&[], upstream.addr)).await;
+
+    let (_client, head) = connect(proxy.addr, "host.invalid..:443").await;
+    assert!(
+        head.starts_with("HTTP/1.1 400 "),
+        "the CONNECT answered {head:?}"
+    );
+}

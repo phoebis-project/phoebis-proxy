@@ -18,7 +18,7 @@ A request gets one of four answers:
 | Answer | When |
 | --- | --- |
 | `200 Connection established` | The TCP connection to the destination stands. The tunnel follows. |
-| `400 Bad Request` | The proxy cannot read the request line, or a `CONNECT` names a target that is no host with a port or a version other than HTTP/1.x. |
+| `400 Bad Request` | The proxy cannot read the request line, or a `CONNECT` names a version other than HTTP/1.x or a target that is no host with a port, a host with an empty label among them, such as a name with two trailing dots. |
 | `405 Method Not Allowed` | The request has a method other than `CONNECT`, a plain HTTP request in absolute form among them. The answer carries `Allow: CONNECT`. |
 | `502 Bad Gateway` | The connection to the destination fails or takes longer than ten seconds, the lookup of its name included. |
 
