@@ -95,10 +95,21 @@ impl FromStr for Upstream {
 
 impl fmt::Display for Upstream {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.host.contains(':') {
-            write!(f, "[{}]:{}", self.host, self.port)
+        write!(f, "{}", HostPort(&self.host, self.port))
+    }
+}
+
+/// A host with its port as a line writes it: `host:port`, and an IPv6 host in brackets, so the line shows where the
+/// host ends.
+pub(crate) struct HostPort<'a>(pub(crate) &'a str, pub(crate) u16);
+
+impl fmt::Display for HostPort<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let HostPort(host, port) = self;
+        if host.contains(':') {
+            write!(f, "[{host}]:{port}")
         } else {
-            write!(f, "{}:{}", self.host, self.port)
+            write!(f, "{host}:{port}")
         }
     }
 }

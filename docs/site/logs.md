@@ -13,8 +13,8 @@ At `debug` it adds the lines of a `CONNECT`, of a connection the allow list clos
 | Line | When |
 | --- | --- |
 | `closed a connection from <address>:<port>, outside the allow list` | The allow list closes a connection. The address is the source as the proxy's listener sees it. |
-| `CONNECT <target> to <destination>: 200, the tunnel closed after <duration>` | A tunnel closes. |
-| `CONNECT <target> to <destination>: 502 after <duration> (<error>)` | The proxy cannot reach the destination of a `CONNECT`. |
+| `CONNECT <target> to <destination>: 200, the tunnel closed after <duration>` | A tunnel closes. The target and the destination each read `<host>:<port>`, with an IPv6 host in brackets. |
+| `CONNECT <target> to <destination>: 502 after <duration> (<error>)` | The proxy cannot reach the destination of a `CONNECT`. The target and the destination each read `<host>:<port>`, with an IPv6 host in brackets. |
 | `refused a request with <status>` | The proxy answers a request with 400 or 405. The line holds the status alone. |
 
 A `CONNECT` line names the target and where its bytes went, the upstream or the target itself. It names a host that a

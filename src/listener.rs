@@ -11,7 +11,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::{sleep, timeout};
 
-use crate::config::{authority, LogLevel, Settings};
+use crate::config::{authority, HostPort, LogLevel, Settings};
 use crate::tunnel;
 
 /// The most bytes a `CONNECT` head takes, its blank line included.
@@ -133,7 +133,9 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
             debug(
                 &settings,
                 format_args!(
-                    "CONNECT {host}:{port} to {to_host}:{to_port}: {} after {:.1?} ({error})",
+                    "CONNECT {} to {}: {} after {:.1?} ({error})",
+                    HostPort(&host, port),
+                    HostPort(to_host, to_port),
                     BAD_GATEWAY.status,
                     started.elapsed()
                 ),
@@ -150,7 +152,9 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
     debug(
         &settings,
         format_args!(
-            "CONNECT {host}:{port} to {to_host}:{to_port}: 200, the tunnel closed after {:.1?}",
+            "CONNECT {} to {}: 200, the tunnel closed after {:.1?}",
+            HostPort(&host, port),
+            HostPort(to_host, to_port),
             opened.elapsed()
         ),
     );
