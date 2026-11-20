@@ -120,6 +120,7 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
     };
     drop(head);
     let (to_host, to_port) = tunnel::destination(&host, port, &settings.upstream);
+    let (from, to) = (HostPort(&host, port), HostPort(to_host, to_port));
     let far = match tunnel::connect(to_host, to_port).await {
         Ok(far) => far,
         Err(error) => {
@@ -133,9 +134,7 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
             debug(
                 &settings,
                 format_args!(
-                    "CONNECT {} to {}: {} after {:.1?} ({error})",
-                    HostPort(&host, port),
-                    HostPort(to_host, to_port),
+                    "CONNECT {from} to {to}: {} after {:.1?} ({error})",
                     BAD_GATEWAY.status,
                     started.elapsed()
                 ),
@@ -152,9 +151,7 @@ async fn serve_connection(mut client: TcpStream, settings: Arc<Settings>) {
     debug(
         &settings,
         format_args!(
-            "CONNECT {} to {}: 200, the tunnel closed after {:.1?}",
-            HostPort(&host, port),
-            HostPort(to_host, to_port),
+            "CONNECT {from} to {to}: 200, the tunnel closed after {:.1?}",
             opened.elapsed()
         ),
     );

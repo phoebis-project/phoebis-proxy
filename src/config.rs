@@ -30,16 +30,12 @@ impl FromStr for Network {
             .ok_or_else(|| format!("the prefix length is a number from 0 to {width}"))?;
         // A mapped entry with a prefix of 96 or more names IPv4 peers alone, and `contains` reads a mapped peer as its
         // IPv4 address, so the entry is stored as the IPv4 network it names.
-        let mapped = match address {
-            IpAddr::V6(entry) if prefix >= 96 => entry.to_ipv4_mapped(),
-            _ => None,
-        };
-        Ok(match mapped {
-            Some(entry) => Network {
+        Ok(match address.to_canonical() {
+            IpAddr::V4(entry) if prefix >= 96 => Network {
                 address: IpAddr::V4(entry),
                 prefix: prefix - 96,
             },
-            None => Network { address, prefix },
+            _ => Network { address, prefix },
         })
     }
 }
@@ -148,18 +144,19 @@ pub(crate) fn authority(text: &str) -> Option<(&str, u16)> {
             .is_ok()
             .then_some((address, port));
     }
-    let name = !host.is_empty()
-        && host
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_'));
     // One trailing dot is the root's, and each label ahead of it holds a byte or more, so a name with a dot pair is
     // no host and never reaches the lookup.
-    let labeled = host
+    let name = host
         .strip_suffix('.')
         .unwrap_or(host)
         .split('.')
-        .all(|label| !label.is_empty());
-    (name && labeled).then_some((host, port))
+        .all(|label| {
+            !label.is_empty()
+                && label
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+        });
+    name.then_some((host, port))
 }
 
 #[cfg(test)]
