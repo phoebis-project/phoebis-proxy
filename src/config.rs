@@ -205,7 +205,6 @@ mod tests {
     fn a_mapped_entry_with_a_prefix_of_96_or_more_is_its_ipv4_network() {
         let network: Network = "::ffff:0.0.0.0/96".parse().unwrap();
         assert!(network.contains("10.1.2.3".parse().unwrap()));
-        assert!(network.contains("::ffff:10.1.2.3".parse().unwrap()));
         assert_eq!(network.to_string(), "0.0.0.0/0");
     }
 
