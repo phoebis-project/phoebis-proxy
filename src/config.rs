@@ -202,6 +202,12 @@ mod tests {
     }
 
     #[test]
+    fn an_upstream_whose_host_holds_a_byte_outside_a_name_is_refused() {
+        assert!("ho/st.example:8443".parse::<Upstream>().is_err());
+        assert!("ho_st-1.example:8443".parse::<Upstream>().is_ok());
+    }
+
+    #[test]
     fn a_mapped_entry_with_a_prefix_of_96_or_more_is_its_ipv4_network() {
         let network: Network = "::ffff:0.0.0.0/96".parse().unwrap();
         assert!(network.contains("10.1.2.3".parse().unwrap()));
