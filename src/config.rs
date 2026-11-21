@@ -215,6 +215,13 @@ mod tests {
     }
 
     #[test]
+    fn a_mapped_entry_with_a_prefix_past_96_admits_its_ipv4_subnet_alone() {
+        let network: Network = "::ffff:192.0.2.0/120".parse().unwrap();
+        assert!(network.contains("192.0.2.200".parse().unwrap()));
+        assert!(!network.contains("192.0.3.1".parse().unwrap()));
+    }
+
+    #[test]
     fn a_mapped_entry_with_a_prefix_under_96_stays_an_ipv6_network() {
         let network: Network = "::ffff:0.0.0.0/95".parse().unwrap();
         assert!(network.contains("::fffe:0:1".parse().unwrap()));
