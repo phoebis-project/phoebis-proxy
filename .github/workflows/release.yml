@@ -43,16 +43,25 @@ jobs:
             echo "Cargo.toml has no single package version"
             exit 1
           fi
+          # The form here and the changelog's section below are checked on each event, so a pull request or a dry run
+          # shows what a release would be refused for before the release and its tag exist. The tag below reads the
+          # same pattern, so no version passes here that a release refuses for its form.
+          form='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
+          printf '%s' "$version" | grep -Eq "$form" \
+            || { echo "Cargo.toml states a package version that is not X.Y.Z or X.Y.Z-suffix"; exit 1; }
+          section() {
+            awk -v heading="## $1" '$0 == heading || index($0, heading " ") == 1 { found = 1 } END { exit !found }' \
+              docs/site/changelog.md
+          }
           # ghcr.io accepts lower-case names only, and GITHUB_REPOSITORY keeps the owner's spelling.
           registry_image="ghcr.io/${GITHUB_REPOSITORY,,}"
           echo "registry_image=$registry_image" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" = release ]; then
-            printf '%s' "$TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$' \
+            printf '%s' "$TAG" | grep -Eq "$form" \
               || { echo "release tag '$TAG' is not X.Y.Z or X.Y.Z-suffix"; exit 1; }
             [ "$TAG" = "$version" ] \
               || { echo "release tag '$TAG' differs from the package version '$version' in Cargo.toml"; exit 1; }
-            awk -v heading="## $TAG" '$0 == heading || index($0, heading " ") == 1 { found = 1 } END { exit !found }' \
-              docs/site/changelog.md \
+            section "$TAG" \
               || { echo "docs/site/changelog.md has no '## $TAG' section for this release"; exit 1; }
             {
               echo "exporter=type=image,push-by-digest=true,name-canonical=true,push=true"
@@ -60,6 +69,8 @@ jobs:
               echo "push=true"
             } >> "$GITHUB_OUTPUT"
           else
+            section "$version" \
+              || { echo "docs/site/changelog.md has no '## $version' section for the package version"; exit 1; }
             {
               echo "exporter=type=docker"
               echo "image=phoebis-proxy:smoke"

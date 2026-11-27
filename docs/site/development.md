@@ -25,8 +25,12 @@ covers it until then. To release:
    release whose step 1 moved no pin. Then create the release on GitHub with the tag `X.Y.Z`, no `v` prefix, at the
    commit that the dry run proved, with the version as its title and a link to the [changelog](changelog.md) page in its
    notes. Create the release of a version with a suffix as a prerelease. Publishing it starts the workflow.
-4. The guard refuses the release before anything builds when the tag has another form
-   (`release tag '{TAG}' is not X.Y.Z or X.Y.Z-suffix`), differs from the package version
+4. On each event the guard refuses a package version that is not `X.Y.Z` or `X.Y.Z-suffix`
+   (`Cargo.toml states a package version that is not X.Y.Z or X.Y.Z-suffix`). On a pull request and on a dry run it
+   refuses a changelog with no section for that version
+   (`docs/site/changelog.md has no '## {version}' section for the package version`), so the dry run of step 3 shows a
+   missed heading before the release exists. On a release it refuses the release before anything builds when the tag has
+   another form (`release tag '{TAG}' is not X.Y.Z or X.Y.Z-suffix`), differs from the package version
    (`release tag '{TAG}' differs from the package version '{version}' in Cargo.toml`), or has no section in the
    changelog (`docs/site/changelog.md has no '## {TAG}' section for this release`). Otherwise the run builds two images,
    `linux/amd64` on `ubuntu-24.04` and `linux/arm64` on `ubuntu-24.04-arm`, and pushes each by digest. Each image runs
