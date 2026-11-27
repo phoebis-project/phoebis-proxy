@@ -291,11 +291,16 @@ jobs:
           while IFS= read -r tag; do [ -n "$tag" ] && args+=(-t "$tag"); done <<< "$TAGS"
           refs=()
           for digest in *; do refs+=("$IMAGE@sha256:$digest"); done
+          # The step ends here where the tags lack the version's own tag. Without this line the job would move latest
+          # and upload the archives of a version whose image has no tag.
+          grep -qxF "$IMAGE:$VERSION" <<< "$TAGS"
+          # The dry run prints the list that these references make and pushes nothing. Its output goes into a variable
+          # rather than a pipe, so a dry run that fails ends the step with its own status. A list that lacks a platform
+          # ends the step at the filter, ahead of the command that writes the tags.
+          list=$(docker buildx imagetools create --dry-run "${refs[@]}")
+          jq -e '[.manifests[] | select(.platform.os == "linux") | .platform.architecture] | unique
+                 | (["amd64", "arm64"] - .) == []' <<< "$list"
           docker buildx imagetools create "${args[@]}" "${refs[@]}"
-      - run: |
-          docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{json .Manifest}}' \
-            | jq -e '[.manifests[] | select(.platform.os == "linux") | .platform.architecture] | unique
-                     | contains(["amd64", "arm64"])'
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: ${{ runner.temp }}/assets

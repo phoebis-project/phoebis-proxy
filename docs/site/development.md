@@ -42,9 +42,11 @@ covers it until then. To release:
    `x86_64-apple-darwin`, `x86_64-pc-windows-msvc` and `x86_64-unknown-linux-musl`. Each binary runs through `--version`
    as the images do, and the two Linux binaries pass a static link check. An archive holds the binary and the license,
    as `phoebis-proxy-{VERSION}-{TARGET}.tar.gz`, or `.zip` for Windows. Once each image and each archive has passed, the
-   run publishes one manifest list at `ghcr.io/phoebis-project/phoebis-proxy` under `X.Y.Z`, `X.Y`, `X` (from major 1),
-   `latest` and `sha-<short sha>`, with none of `X.Y`, `X` and `latest` for a prerelease. It checks that the list holds
-   amd64 and arm64, and uploads the five archives with `SHA256SUMS` to the release.
+   run checks that the version's own tag is among the tags to write and that the pushed digests make a manifest list
+   with amd64 and arm64, and it writes no tag where either check fails. It then publishes that list at
+   `ghcr.io/phoebis-project/phoebis-proxy` under `X.Y.Z`, `X.Y`, `X` (from major 1), `latest` and `sha-<short sha>`,
+   with none of `X.Y`, `X` and `latest` for a prerelease, and uploads the five archives with `SHA256SUMS` to the
+   release.
 
 A manual dispatch (Actions, Release, Run workflow) is the dry run: it builds and smokes each target and both platforms
 and pushes nothing. Run it on `main` after a change to a packaging input and ahead of each release. A release whose run
