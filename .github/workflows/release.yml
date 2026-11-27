@@ -51,7 +51,8 @@ jobs:
               || { echo "release tag '$TAG' is not X.Y.Z or X.Y.Z-suffix"; exit 1; }
             [ "$TAG" = "$version" ] \
               || { echo "release tag '$TAG' differs from the package version '$version' in Cargo.toml"; exit 1; }
-            grep -Eq "^## ${TAG//./\\.}( |\$)" docs/site/changelog.md \
+            awk -v heading="## $TAG" '$0 == heading || index($0, heading " ") == 1 { found = 1 } END { exit !found }' \
+              docs/site/changelog.md \
               || { echo "docs/site/changelog.md has no '## $TAG' section for this release"; exit 1; }
             {
               echo "exporter=type=image,push-by-digest=true,name-canonical=true,push=true"
