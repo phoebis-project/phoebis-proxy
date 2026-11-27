@@ -1,11 +1,17 @@
 name: Release
 on:
-  # A pull request and a push to main build and smoke the five archives and the image for both platforms and push
-  # nothing, so a broken release build or Dockerfile is caught before a release runs it.
+  # No push starts this workflow: the image build prints the event that started the run, and a push event holds the
+  # pusher's account address.
+  # A pull request that changes a packaging input builds and smokes the five archives and the image for both platforms
+  # and pushes nothing, so a broken release build or Dockerfile is caught before a release runs it.
   pull_request:
-  push:
-    branches:
-      - main
+    paths:
+      - .dockerignore
+      - .github/workflows/release.yml
+      - Cargo.lock
+      - Cargo.toml
+      - Dockerfile
+      - rust-toolchain.toml
   release:
     types: [published]
   # The dry run builds and smokes every target and both platforms and pushes nothing.
@@ -45,6 +51,8 @@ jobs:
               || { echo "release tag '$TAG' is not X.Y.Z or X.Y.Z-suffix"; exit 1; }
             [ "$TAG" = "$version" ] \
               || { echo "release tag '$TAG' differs from the package version '$version' in Cargo.toml"; exit 1; }
+            grep -Eq "^## ${TAG//./\\.}( |\$)" docs/site/changelog.md \
+              || { echo "docs/site/changelog.md has no '## $TAG' section for this release"; exit 1; }
             {
               echo "exporter=type=image,push-by-digest=true,name-canonical=true,push=true"
               echo "image=$registry_image"
