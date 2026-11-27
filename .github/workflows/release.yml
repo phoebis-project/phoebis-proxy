@@ -36,6 +36,7 @@ jobs:
       - id: decide
         env:
           EVENT: ${{ github.event_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
           TAG: ${{ github.event.release.tag_name }}
         run: |
           version=$(sed -n '/^\[package\]/,/^\[/{s/^version = "\([^"]*\)"$/\1/p}' Cargo.toml)
@@ -63,6 +64,22 @@ jobs:
               || { echo "release tag '$TAG' differs from the package version '$version' in Cargo.toml"; exit 1; }
             section "$TAG" \
               || { echo "docs/site/changelog.md has no '## $TAG' section for this release"; exit 1; }
+            # A release event states its mark as true or false. Each other text means that the step's env does not
+            # carry the event's value, and the compare below would then pass each tag with no suffix.
+            [ "$PRERELEASE" = true ] || [ "$PRERELEASE" = false ] \
+              || { echo "the release event states no prerelease mark"; exit 1; }
+            # The publish job chooses the image's tags from the version's suffix, and GitHub labels the release by its
+            # mark. Where the two disagree, a release that is marked as a prerelease would still move latest.
+            case "$TAG" in
+              *-*)
+                [ "$PRERELEASE" = true ] \
+                  || { echo "release tag '$TAG' has a suffix, and the release is not marked as a prerelease"; exit 1; }
+                ;;
+              *)
+                [ "$PRERELEASE" != true ] \
+                  || { echo "release tag '$TAG' has no suffix, and the release is marked as a prerelease"; exit 1; }
+                ;;
+            esac
             {
               echo "exporter=type=image,push-by-digest=true,name-canonical=true,push=true"
               echo "image=$registry_image"

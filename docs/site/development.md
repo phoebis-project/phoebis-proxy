@@ -32,13 +32,16 @@ covers it until then. To release:
    missed heading before the release exists. On a release it refuses the release before anything builds when the tag has
    another form (`release tag '{TAG}' is not X.Y.Z or X.Y.Z-suffix`), differs from the package version
    (`release tag '{TAG}' differs from the package version '{version}' in Cargo.toml`), or has no section in the
-   changelog (`docs/site/changelog.md has no '## {TAG}' section for this release`). Otherwise the run builds two images,
-   `linux/amd64` on `ubuntu-24.04` and `linux/arm64` on `ubuntu-24.04-arm`, and pushes each by digest. Each image runs
-   through `--version`, which must print `phoebis-proxy {VERSION}`. The run builds five archives, each on a runner of
-   its own platform, for `aarch64-apple-darwin`, `aarch64-unknown-linux-musl`, `x86_64-apple-darwin`,
-   `x86_64-pc-windows-msvc` and `x86_64-unknown-linux-musl`. Each binary runs through `--version` as the images do, and
-   the two Linux binaries pass a static link check. An archive holds the binary and the license, as
-   `phoebis-proxy-{VERSION}-{TARGET}.tar.gz`, or `.zip` for Windows. Once each image and each archive has passed, the
+   changelog (`docs/site/changelog.md has no '## {TAG}' section for this release`). It refuses a release whose
+   prerelease mark disagrees with its tag too: a tag with a suffix on a release that is not marked as a prerelease
+   (`release tag '{TAG}' has a suffix, and the release is not marked as a prerelease`), and a tag with no suffix on a
+   release that is marked as one (`release tag '{TAG}' has no suffix, and the release is marked as a prerelease`).
+   Otherwise the run builds two images, `linux/amd64` on `ubuntu-24.04` and `linux/arm64` on `ubuntu-24.04-arm`, and
+   pushes each by digest. Each image runs through `--version`, which must print `phoebis-proxy {VERSION}`. The run
+   builds five archives, each on a runner of its own platform, for `aarch64-apple-darwin`, `aarch64-unknown-linux-musl`,
+   `x86_64-apple-darwin`, `x86_64-pc-windows-msvc` and `x86_64-unknown-linux-musl`. Each binary runs through `--version`
+   as the images do, and the two Linux binaries pass a static link check. An archive holds the binary and the license,
+   as `phoebis-proxy-{VERSION}-{TARGET}.tar.gz`, or `.zip` for Windows. Once each image and each archive has passed, the
    run publishes one manifest list at `ghcr.io/phoebis-project/phoebis-proxy` under `X.Y.Z`, `X.Y`, `X` (from major 1),
    `latest` and `sha-<short sha>`, with none of `X.Y`, `X` and `latest` for a prerelease. It checks that the list holds
    amd64 and arm64, and uploads the five archives with `SHA256SUMS` to the release.
@@ -47,5 +50,8 @@ A manual dispatch (Actions, Release, Run workflow) is the dry run: it builds and
 and pushes nothing. Run it on `main` after a change to a packaging input and ahead of each release. A release whose run
 fails for a reason in its commit is deleted with its tag and created again at the corrected commit behind a green dry
 run, as long as the run published no image tag and no archive under the version. Once an image tag or an archive is
-public, the correction ships as the next patch version. A change that an operator sees writes its entry under
+public, the correction ships as the next patch version. A release that the guard refuses for its prerelease mark is
+deleted with its tag and created again with the right mark at the same commit as long as no image tag and no archive of
+the version is public, since a second run of the workflow reads the first event and a changed mark starts no run, and a
+version with one of them public takes the next patch version. A change that an operator sees writes its entry under
 `## Unreleased`, the first section of the [changelog](changelog.md), and step 2 renames that heading to the version.
