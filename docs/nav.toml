@@ -5,5 +5,6 @@ nav = [
   { "What a CONNECT gets" = "connect.md" },
   { "Beside Phoebis Router" = "beside-the-router.md" },
   { "Logs" = "logs.md" },
+  { "Development" = "development.md" },
   { "Changelog" = "changelog.md" },
 ]
