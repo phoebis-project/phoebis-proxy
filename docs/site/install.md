@@ -1,7 +1,7 @@
 # Install
 
 Each release comes as five archives with one `SHA256SUMS` file, and as an image. Its tag is the package's version with
-no `v` in front, such as `0.1.0`.
+no `v` in front, such as `0.1.0`. The [changelog](changelog.md) says what each release holds.
 
 ## From a release archive
 
